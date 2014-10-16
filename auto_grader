@@ -1,26 +1,20 @@
-"""
-<Program Name>
-  auto_grader.r2py
+''' Description:
+    This program determines if a student attack code is able to bypass a given defensive
+    security layer.   An attack is considered to be successful if it prints to stdout or stderr.
 
-<Purpose>
-  Module which takes all defense programs and attack programs in Repy V2 and creates 
-  csv file describing test result of every attack program against each defense program.
-  Under the attack program column, it shows one if attack was able to compromise security layer 
-  and 0 otherwise. 
-  Students submitting attack and defense programs are instructed to log output or raise error
-  in their attack program only when the security layer gets failed. In this program we check which 
-  attack program is producing output or error. If so that means the attack is successful and that 
-  security layer is compromised.
+    The process is repeated for multiple students on multiple defense layers (Reference monitors)
+    If a student had multiple attack files, they were successful if *any*
+    attack succeeds.
 
-<usage>
-  -All defense programs should be in a folder and all attack programs in another folder. 
-   auto_grader, repy.py ,restrictions.default, wrapper.r2py, encasementlib.r2py.
-  -Create a temporary target folder inside the directory.
+    *** Note: This assumes that the attacks were pre-vetted.
+        All attack codes are in the same directory. Reference monitors are in a separate directory.
 
-  python auto_grader.py defense_folder_path attack_folder_path temp_target_folder_path
 
-"""
+    The output of this will be a list of lines that say the defense name,
+    the attacking student name, and a list of tests that bypass the security
+    layer.   If a student is not successful, nothing is output.
 
+'''
 
 
 
@@ -31,26 +25,32 @@ import shutil
 import csv
 import time
 import signal # using SIGKILL
-import sys
 
+# Paths to reference monitor folders
+# path_RM_RW='/Users/Sara/RM/Richard-MZ'
+#path_RM_Ian='/Users/Sara/RM/Ref_Monitor_Ian'
+#path_Att_Ian='/Users/Sara/RM/Attacks_Ian'
 
-path_DefenseFolder = sys.argv[1]
-path_AttackFolder = sys.argv[2]
+path_DefenseFolder = '/Users/Sara/RM/JC_Fall_2012_PrivateWrite/Ref_Monitor_JC_PW'
+path_AttackFolder = '/Users/Sara/RM/JC_Fall_2012_PrivateWrite/Attacks_JC_PW'
 
+#path_AttackFolder = '/Users/Sara/RM/JC_Fall_2012_PrivateWrite/t1'
 
 # Paths  to temp folder where the attack is run
-path_TempFolder = sys.argv[3]
+path_TempFolder = '/Users/Sara/RM//Temp_Folder'
 
 #part of filename to look for
-attack_ext = "*.r2py"       #extension of attack programs will be r2py
-def_ext = "reference*"      #students are instructed to name their defense program starting with reference
-
+attack_ext = "*.repy"       #justin's student files
+def_ext = "reference*"      #justin's student files
+#def_ext="*monitor*"
+#attack_ext="*attack*"
 
 
 
 def get_student_ID(attack_fnlist):
   ''' Given a list of the total attack files, get a list of all of the
-    student IDs.   This assumes that the file names contains _
+    student IDs.   This assumes that the file names are in the format:
+    studentname_testinfo...
   '''
 
   studentset = set()
@@ -106,13 +106,17 @@ def did_this_attack_succeed(attackFilename, defenseFilename):
     os.mkdir(path_TempFolder)  # make a temp folder
     os.chdir(path_TempFolder)  # cd to temp folder at this point
 
+
+    shutil.copy('/Users/Sara/RM/Repy/encasementlib.r2py', path_TempFolder + '/encasementlib.r2py')
+    shutil.copy('/Users/Sara/RM/Repy/wrapper.r2py', path_TempFolder + '/wrapper.r2py')
+
     shutil.copy(path_DefenseFolder  + '/' + defenseFilename, path_TempFolder + '/' + defenseFilename)
     shutil.copy(path_AttackFolder + '/' + attackFilename, path_TempFolder + '/' + attackFilename)
 
     start = time.time()
 
     pobj = subprocess.Popen(
-        ['python', '../repy.py', '--stop=Repy_stop_this', '../restrictions.default', '../encasementlib.r2py', defenseFilename,
+        ['python', '../Repy/repy.py', '--stop=Repy_stop_this', '../Repy/restrictions.default', 'encasementlib.r2py', defenseFilename,
          attackFilename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # NOT A BUG: Note that this will not get all of the stdout or stderr because we are polling for completion.
@@ -137,8 +141,9 @@ def did_this_attack_succeed(attackFilename, defenseFilename):
     shutil.rmtree(path_TempFolder)  #remove the temp directory
 
 
-    if stdout != '' or stderr !='':  
+    if stdout != '' or stderr !='':  # or time out
         return True
+
     else:
         return False
 
@@ -192,9 +197,10 @@ def main():
     resultFile2 = open("All_Students_matrix.csv",'wb')
     wr_students = csv.writer(resultFile2)
     wr_students.writerow(header_studentmatrix)
-    
+
 
     for defenseFilename in defense_fnlist:
+
         collection_successful_attacks=list()
         collection_successful_students=list()
 
@@ -204,12 +210,21 @@ def main():
 
             # get just this student's attacks
             student_attackfns = get_student_attack_code(attackingstudent,attack_fnlist)
+           # print len(student_attackfns)
+
+          #  attacks_perstudent = open("attack.csv",'wb')
+          #  wr = csv.writer(attacks_perstudent)
+          #  wr.writerow([len(student_attackfns),student_attackfns])
+
             successfulattacks = check_if_student_attacks_succeed(student_attackfns,defenseFilename)
 
 
             if successfulattacks!=[]:
 
                 print defenseFilename,'---attacked by--- ', attackingstudent,'----->', successfulattacks
+
+
+
                 collection_successful_attacks=collection_successful_attacks+successfulattacks
                 collection_successful_students.append(attackingstudent)
 
@@ -222,7 +237,10 @@ def main():
 
         print 'row completed with students',row_students
 
-     
+     #attacksperstudent = open("attack.csv",'wb')
+     #   wr = csv.writer(attacksperstudent)
+
+    #  wr.writerow([len(student_attackfns)])
 
 
 
