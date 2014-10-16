@@ -11,10 +11,10 @@ Requirements
 ===========
 
 One must have Python installed on the system. 
-Since it tests the files written in Repy V2, these addituonal files are required from Seattle Testbed organization at https://github.com/SeattleTestbed -
-repy.py
-encasementlib.r2py
-restrictions.default
+Since it tests the files written in Repy V2, these additional files are required from Seattle Testbed organization at https://github.com/SeattleTestbed -
+repy.py, 
+encasementlib.r2py, 
+restrictions.default, 
 wrapper.r2py
 
 These files must be added to the directory containing auto_grader.py
@@ -23,6 +23,7 @@ How to run
 ===========
 
 Inside the directory containing auto_grader.py, run the following command:
+
 python auto_grader.py defense-program-folder-path attack-program-folder-path temporary-target-folder-path
 
 
